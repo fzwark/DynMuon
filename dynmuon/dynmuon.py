@@ -680,45 +680,6 @@ def adjust_lr_spectral_norm(lr, param_shape, flatten):
     return adjusted_lr
 
 
-def zeropower_via_svd(G: Tensor, epsilon: float = 1e-7) -> Tensor:
-    orig_dtype = G.dtype
-
-    X = G.to(torch.float32)
-
-    transposed = False
-    if X.size(-2) > X.size(-1):
-        X = X.mT
-        transposed = True
-
-    U, S, Vh = torch.linalg.svd(X, full_matrices=False)
-    if not torch.isfinite(S).all():
-        jitter = epsilon
-        U, S, Vh = torch.linalg.svd(X + jitter * torch.randn_like(X), full_matrices=False)
-
-
-    p = -0.1
-    lam = 1e-5
-
-    lam_alpha = 1e-3
-    s2 = S * S
-    # s2_mean = s2.mean(dim=-1, keepdim=True)       
-    # lam = lam_alpha * s2_mean + epsilon
-
-    exp = 0.5 * (p - 1.0)
-    scale = S * (s2 + lam).pow(exp)
-
-
-    Q = (U * scale.unsqueeze(-2)) @ Vh
-
-
-    if transposed:
-        Q = Q.mT
-
-    return Q.to(orig_dtype)
-
-
-
-
 # optimal shaping
 def shape_with_p_lam_via_svd(G: Tensor, p: float, epsilon: float = 1e-7) -> Tensor:
     orig_dtype = G.dtype
@@ -752,9 +713,7 @@ def shape_with_p_lam_via_svd(G: Tensor, p: float, epsilon: float = 1e-7) -> Tens
 
 
 
-
 # fast spectral shaping implementation for any p
-
 @torch.no_grad()
 def fast_spectral(
     G: Tensor,
