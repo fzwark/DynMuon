@@ -26,14 +26,14 @@ from typing import Optional
 
 from models.qwen_model import GPT, GPTConfig, parallelize_gpt_model
 from models.gpt_utils import DistributedDataLoader
-from dion import Dion, DionMixedPrecisionConfig
-from dion import DionReference
-from dion import DionSimple
-from dion import Muon
-from dion import MuonReference
-from dion import Dion2
-from dion import DynMuon
-from dion import NorMuon
+from dynmuon import Dion, DionMixedPrecisionConfig
+from dynmuon import DionReference
+from dynmuon import DionSimple
+from dynmuon import Muon
+from dynmuon import MuonReference
+from dynmuon import Dion2
+from dynmuon import DynMuon
+from dynmuon import NorMuon
 import random, numpy as np
 
 seed = 0
