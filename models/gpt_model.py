@@ -169,6 +169,33 @@ class GPT(nn.Module):
         # forward pass for just the embedding layer
         return self.transformer.wte(idx)  # token embeddings of shape (b, t, n_embd)
 
+    def _forward(self, x, targets, return_logits):
+        # forward pass for the rest of the model
+        for block in self.transformer.h:
+            x = block(x)
+        x = F.rms_norm(x, (x.size(-1),))
+
+        if targets is not None:
+            # if we are given some desired targets also calculate the loss
+            logits = self.lm_head(x)
+            logits = logits.float()  # use tf32/fp32 for logits
+            loss = F.cross_entropy(
+                logits.view(-1, logits.size(-1)), targets.view(-1), ignore_index=-1
+            )
+
+        else:
+            # inference-time mini-optimization: only forward the lm_head on the very last position
+            logits = self.lm_head(
+                x[:, [-1], :]
+            )  # note: using list [-1] to preserve the time dim
+            logits = logits.float()  # use tf32/fp32 for logits
+            loss = None
+
+        # there are performance reasons why not returning logits is prudent, if not needed
+        if return_logits:
+            return logits
+        else:
+            return loss
 
     def compile(self):
         # Workaround for issue where torch.compile fails for embedding layer
